@@ -1,0 +1,14 @@
+data
+db-data
+
+.git
+__pycache__
+*.pyc
+tests
+uv.lock
+.venv
+venv
+dist
+build
+*.egg-info
+.env

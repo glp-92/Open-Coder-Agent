@@ -1,0 +1,40 @@
+services:
+  planka:
+    image: ghcr.io/plankanban/planka:latest
+    restart: on-failure
+    volumes:
+      - ./data:/app/data
+    # Optionally override this to your user/group
+    # user: 1000:1000
+    # tmpfs:
+    #   - /app/.tmp:mode=770,uid=1000,gid=1000
+    ports:
+      - 3000:1337
+    environment:
+      - BASE_URL=http://localhost:3000
+      - DATABASE_URL=postgresql://postgres@postgres/planka
+      - SECRET_KEY="${PLANKA_SECRET}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: on-failure
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=planka
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d planka"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+    restart: on-failure
+    ports:
+      - "127.0.0.1:8080:8080"
