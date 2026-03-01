@@ -1,0 +1,33 @@
+[project]
+name = "Open-Coder-Agent-API"
+version = "0.1.0"
+description = "API for intercommunication between Open Coder Agent services"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.116.1",
+    "loguru>=0.7.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.5.0",
+    "pytest>=9.0.1",
+]
+
+[tool.ruff]
+line-length = 140
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "FAST", "RUF", "I", "SIM", "B", "ARG", "RET"]
+ignore = ["B904", "B008"] # B008 Depends on query params
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
