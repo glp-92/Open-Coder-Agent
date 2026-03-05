@@ -38,3 +38,35 @@ services:
     restart: on-failure
     ports:
       - "127.0.0.1:8080:8080"
+
+  ollama-server:
+    image: ollama/ollama:latest
+    restart: on-failure
+    ports:
+      - "127.0.0.1:11434:11434"
+    environment:
+      - MODEL_NAME="${MODEL_NAME}"
+      - OLLAMA_KEEP_ALIVE=1h
+    volumes:
+      - ./ollama-data:/root/.ollama
+      - ./ollama-server/entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash",
+          "-c",
+          "{ printf >&3 'GET / HTTP/1.0\\r\\n\\r\\n'; cat <&3; } 3<>/dev/tcp/localhost/11434 | grep 'Ollama is' || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]

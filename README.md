@@ -2,6 +2,11 @@
 
 Open Source coder agent that uses issues on Git as prompts joined with codebase in order to generate pull requests solving them
 
+## Requirements
+
+- [Docker](https://docs.docker.com/engine/install/)
+- [Nvidia container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+
 ## Planka
 
 Planka is an Open Source easy-to-use Kanban management system that can configure webhooks to link to another applications
