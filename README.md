@@ -15,3 +15,27 @@ Basic setup
 
 1. Create a secret with `openssl rand -hex 64` and include it in the `.env` as PLANKA_SECRET
 2. Launch an init container to setup admin account `docker compose run --rm planka npm run db:create-admin-user`
+
+## API / Agent
+
+FastAPI is fully integrated with [uv](https://docs.astral.sh/uv). For development purposes, install uv and all needed dependencies
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv --version
+```
+
+`pyproject.toml` is already provided with Python version, needed dependencies and configuration for code static analysis
+
+Install `pre-commit` to run code checks on commit phase
+
+```bash
+uv run pre-commit install
+uv run pre-commit run --all-files # test pre-commit on code manually
+```
+
+## Run API
+
+```bash
+uv run fastapi run api/src/main.py --port 8080
+```
