@@ -27,6 +27,8 @@ uv --version
 
 `pyproject.toml` is already provided with Python version, needed dependencies and configuration for code static analysis
 
+`uv sync --all-groups --no-cache` to install all dependencies
+
 Install `pre-commit` to run code checks on commit phase
 
 ```bash
