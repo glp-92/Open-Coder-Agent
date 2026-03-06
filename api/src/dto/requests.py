@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel, ConfigDict
 
 
@@ -10,7 +8,7 @@ class _List(BaseModel):
 
 
 class _Included(BaseModel):
-    lists: List[_List] = []
+    lists: list[_List] = []
     model_config = ConfigDict(extra="ignore")
 
 

@@ -1,6 +1,5 @@
-from fastapi import FastAPI
-
 from controller.routes import router as webhook_router
+from fastapi import FastAPI
 
 app = FastAPI(title="Open Coder Agent API")
 
