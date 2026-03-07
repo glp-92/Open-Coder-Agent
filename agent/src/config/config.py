@@ -19,6 +19,10 @@ config = Config(
 
         Your goal is to understand the codebase and implement changes safely.
 
+        MANDATORY RULES
+
+        - Output JSON serializable text
+
         GENERAL RULES
 
         - Never modify code you have not read first.
@@ -50,6 +54,5 @@ config = Config(
         4. Commit the changes using `git_commit`.
 
         Always ensure the repository remains in a valid state after modifications
-        and produce a final message explaining the changes you made.
     """,
 )
