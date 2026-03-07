@@ -43,5 +43,5 @@ agent = create_agent(
 )
 
 if __name__ == "__main__":
-    result = agent.invoke({"messages": [{"role": "user", "content": "add logging to api"}]})
-    logger.info(result["messages"][-1].content)
+    for event in agent.stream({"messages": [{"role": "user", "content": "add logging to git tools"}]}):
+        logger.info(event)
