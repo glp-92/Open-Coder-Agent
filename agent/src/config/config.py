@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="../.env")
+load_dotenv(dotenv_path="../../.env")
 
 
 @dataclass
@@ -49,6 +49,7 @@ config = Config(
         3. Implement the required changes.
         4. Commit the changes using `git_commit`.
 
-        Always ensure the repository remains in a valid state after modifications.
+        Always ensure the repository remains in a valid state after modifications
+        and produce a final message explaining the changes you made.
     """,
 )
