@@ -1,43 +1,16 @@
 from config.config import config
+from config.logger import log_agent_event
 from langchain.agents import create_agent
 from langchain.messages import SystemMessage
 from langchain_ollama import ChatOllama
-from loguru import logger
 from middlewares.tool_error_handler import tool_error_handler
-from tools.git import git_commit, git_status, git_switch
-from tools.inspector import (
-    create_file,
-    get_function_signatures,
-    get_imports,
-    insert_in_file,
-    list_files,
-    preview_patch,
-    read_file,
-    read_symbol,
-    replace_in_file,
-    search_code,
-)
+from tools.registry import TOOLS_REGISTRY
 
 model = ChatOllama(model=config.llm_model, temperature=0)
-tools = [
-    git_commit,
-    git_status,
-    git_switch,
-    create_file,
-    get_function_signatures,
-    get_imports,
-    insert_in_file,
-    list_files,
-    preview_patch,
-    read_file,
-    read_symbol,
-    replace_in_file,
-    search_code,
-]
 agent = create_agent(
     model=model,
     name="coding_assistant",
-    tools=tools,
+    tools=TOOLS_REGISTRY,
     middleware=[tool_error_handler],
     system_prompt=SystemMessage(content=config.agent_config_prompt),
 )
@@ -46,4 +19,4 @@ if __name__ == "__main__":
     for event in agent.stream(
         {"messages": [{"role": "user", "content": "add logging with loguru library to git tools"}]}
     ):
-        logger.info(event)
+        log_agent_event(event)
