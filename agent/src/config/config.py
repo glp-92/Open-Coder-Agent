@@ -23,6 +23,7 @@ config = Config(
 
         - Never modify code you have not read first.
         - Prefer reading small parts of the code instead of entire files.
+        - After reading the code change to the new branch to make safe changes there
         - Make minimal changes required to solve the task.
         - Preserve existing architecture and style.
         - Do not remove unrelated code.

@@ -43,5 +43,7 @@ agent = create_agent(
 )
 
 if __name__ == "__main__":
-    for event in agent.stream({"messages": [{"role": "user", "content": "add logging to git tools"}]}):
+    for event in agent.stream(
+        {"messages": [{"role": "user", "content": "add logging with loguru library to git tools"}]}
+    ):
         logger.info(event)
