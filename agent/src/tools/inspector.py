@@ -1,6 +1,7 @@
 import ast
 import difflib
 import os
+from pathlib import Path
 
 from langchain.tools import tool
 
@@ -29,51 +30,93 @@ IGNORE_EXTENSIONS: set = {
 
 
 @tool
-def list_files(path: str = ".") -> str:
+def get_project_tree(root: str = ".", agent_ignore_path: str | None = None) -> str:
     """
-    list project file structure
+    Obtain a directory tree from a root path.
+    Some folders and extensions are ignored, by default and if agentignore file exists containing some files
     """
-    tree = []
-    for root, dirs, files in os.walk(path):
-        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-        level = root.replace(path, "").count(os.sep)
-        indent = " " * 4 * level
-        tree.append(f"{indent}{os.path.basename(root)}/")
-        sub_indent = " " * 4 * (level + 1)
-        for f in files:
-            if any(f.endswith(ext) for ext in IGNORE_EXTENSIONS):
-                continue
-            tree.append(f"{sub_indent}{f}")
-    return "\n".join(tree)
+    root_path = Path(root)
+    agent_ignores = set()
+    if agent_ignore_path:
+        ignore_file = root_path / agent_ignore_path
+        if ignore_file.exists():
+            with open(ignore_file) as f:
+                agent_ignores = {line.strip() for line in f if line.strip() and not line.startswith("#")}
+
+    def build_tree(current_path: Path, prefix: str = "") -> list[str]:
+        lines = []
+        try:
+            items = [
+                it
+                for it in current_path.iterdir()
+                if it.name not in agent_ignores
+                and it.name not in IGNORE_DIRS
+                and not (it.is_file() and it.suffix in IGNORE_EXTENSIONS)
+            ]
+            items.sort(key=lambda x: (not x.is_dir(), x.name.lower()))
+        except PermissionError:
+            return [f"{prefix}└── [Access Denied]"]
+        for i, item in enumerate(items):
+            is_last = i == len(items) - 1
+            connector = "└── " if is_last else "├── "
+            lines.append(f"{prefix}{connector}{item.name}{'/' if item.is_dir() else ''}")
+            if item.is_dir():
+                new_prefix = prefix + ("    " if is_last else "│   ")
+                lines.extend(build_tree(item, new_prefix))
+        return lines
+
+    if not root_path.exists():
+        return "Error: Root path not found"
+    output = [f"{root_path.name}/"]
+    output.extend(build_tree(root_path))
+    return "\n".join(output)
 
 
 @tool
-def get_function_signatures(file_path: str) -> str:
+def get_enhanced_signatures_from_module(file_path: str) -> str:
     """
-    extracts classes, functions and arguments of .py.
+    Extracts high-level signatures: Classes (inheritance, attributes),
+    Methods, and Functions with types.
     """
-    with open(file_path) as f:
-        node = ast.parse(f.read())
-    signatures = []
-    for item in node.body:
+
+    def get_type_name(node):
+        return ast.unparse(node) if node else "Any"
+
+    def get_summary_doc(node):
+        doc = ast.get_docstring(node)
+        if doc:
+            return f" # {doc.splitlines()[0]}"
+        return ""
+
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+    except Exception as e:
+        return f"Error: {e}"
+    output = []
+    for item in tree.body:
         if isinstance(item, ast.FunctionDef):
-            args = [a.arg for a in item.args.args]
-            signatures.append(f"Function: {item.name}({', '.join(args)})")
-
+            args = [f"{a.arg}: {get_type_name(a.annotation)}" for a in item.args.args]
+            ret = get_type_name(item.returns)
+            output.append(f"def {item.name}({', '.join(args)}) -> {ret}{get_summary_doc(item)}")
         elif isinstance(item, ast.ClassDef):
-            signatures.append(f"Class: {item.name}")
-
+            bases = [ast.unparse(b) for b in item.bases]
+            base_str = f"({', '.join(bases)})" if bases else ""
+            output.append(f"class {item.name}{base_str}:{get_summary_doc(item)}")
             for sub in item.body:
-                if isinstance(sub, ast.FunctionDef):
-                    args = [a.arg for a in sub.args.args]
-                    signatures.append(f"  Method: {sub.name}({', '.join(args)})")
-    return "\n".join(signatures) if signatures else "no classes or functions found."
+                if isinstance(sub, ast.AnnAssign) and isinstance(sub.target, ast.Name):
+                    output.append(f"  {sub.target.id}: {get_type_name(sub.annotation)}")
+                elif isinstance(sub, ast.FunctionDef):
+                    m_args = [f"{a.arg}: {get_type_name(a.annotation)}" for a in sub.args.args]
+                    m_ret = get_type_name(sub.returns)
+                    output.append(f"  def {sub.name}({', '.join(m_args)}) -> {m_ret}{get_summary_doc(sub)}")
+    return "\n".join(output) if output else "No definitions found."
 
 
 @tool
 def get_imports(file_path: str) -> str:
     """
-    imports from .py file
+    Extracts imports from .py file
     """
     with open(file_path) as f:
         tree = ast.parse(f.read())
@@ -87,44 +130,9 @@ def get_imports(file_path: str) -> str:
     return "\n".join(imports)
 
 
-@tool
-def read_symbol(file_path: str, symbol_name: str) -> str:
-    """
-    reads specific code from class or fn
-    """
-    with open(file_path) as f:
-        source = f.read()
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name == symbol_name:
-            start = node.lineno - 1
-            end = node.end_lineno
-            lines = source.splitlines()
-            return "\n".join(lines[start:end])
-    return f"symbol {symbol_name} not found."
-
-
-@tool
-def search_code(query: str, path: str = ".") -> str:
-    """
-    finds specific code inside project
-    """
-    results = []
-    for root, _, files in os.walk(path):
-        for file in files:
-            if file.endswith(".py"):
-                full_path = os.path.join(root, file)
-                with open(full_path) as f:
-                    for i, line in enumerate(f.readlines()):
-                        if query in line:
-                            results.append(f"{full_path}:{i + 1}: {line.strip()}")
-    return "\n".join(results[:50]) if results else "results not found on search code"
-
-
-@tool
 def read_file(file_path: str) -> str:
     """
-    read file content
+    Read full file content
     """
     with open(file_path) as f:
         return f.read()
@@ -133,7 +141,7 @@ def read_file(file_path: str) -> str:
 @tool
 def create_file(file_path: str, content: str) -> str:
     """
-    creates new file
+    Creates new file with content
     """
     if os.path.exists(file_path):
         return f"error: {file_path} already exists."
@@ -144,9 +152,9 @@ def create_file(file_path: str, content: str) -> str:
 
 
 @tool
-def replace_in_file(file_path: str, old: str, new: str) -> str:
+def replace_in_file_first(file_path: str, old: str, new: str) -> str:
     """
-    replace code segment on a file
+    Replaces one code segment on a file
     """
     if not os.path.exists(file_path):
         return f"Error: {file_path} does not exist."
@@ -155,6 +163,23 @@ def replace_in_file(file_path: str, old: str, new: str) -> str:
     if old not in content:
         return "error: text to replace not found"
     updated = content.replace(old, new, 1)
+    with open(file_path, "w") as f:
+        f.write(updated)
+    return "text replace success"
+
+
+@tool
+def replace_in_file_all(file_path: str, old: str, new: str) -> str:
+    """
+    Replaces all found code segments on a file
+    """
+    if not os.path.exists(file_path):
+        return f"Error: {file_path} does not exist."
+    with open(file_path) as f:
+        content = f.read()
+    if old not in content:
+        return "error: text to replace not found"
+    updated = content.replace(old, new, -1)
     with open(file_path, "w") as f:
         f.write(updated)
     return "text replace success"
