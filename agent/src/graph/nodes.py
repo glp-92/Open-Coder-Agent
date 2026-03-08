@@ -12,12 +12,12 @@ def explorer_node(state: AgentState):
     """
     Receives current state, decides tool to use based on model decision
     """
-    state["steps"] += 1
+    steps = state["steps"] + 1
     if state["steps"] > config.max_steps:
-        return {"messages": [AIMessage(content="Stopping: too many steps")]}
+        return {"steps": steps, "messages": [AIMessage(content="Stopping: too many steps")]}
     messages = state.get("messages")
     response = model.invoke(messages)
-    return {"messages": [response]}
+    return {"steps": steps, "messages": [response]}
 
 
 def router_logic(state: AgentState):
@@ -25,6 +25,6 @@ def router_logic(state: AgentState):
     Control function that decides next step
     """
     last_message = state["messages"][-1]
-    if last_message.tool_calls:
+    if getattr(last_message, "tool_calls", None):
         return "tool_executor"
     return "end"

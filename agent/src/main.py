@@ -1,8 +1,9 @@
+from pprint import pprint
+
 from config.config import config
 from graph.state import AgentState
 from graph.workflow import graph
 from langchain_core.messages import HumanMessage, SystemMessage
-from loguru import logger
 
 
 def run(user_input: str) -> None:
@@ -14,9 +15,7 @@ def run(user_input: str) -> None:
         steps=0,
     )
     for event in graph.stream(initial_state, stream_mode="updates"):
-        if "messages" in event:
-            msg = event["messages"][-1]
-            logger.info(f"{msg.type}: {msg.content}")
+        pprint(event)  # noqa: T203
 
 
 if __name__ == "__main__":
