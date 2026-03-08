@@ -13,6 +13,7 @@ def run(user_input: str) -> None:
             HumanMessage(content=user_input),
         ],
         steps=0,
+        current_branch=None,
     )
     for event in graph.stream(initial_state, stream_mode="updates"):
         pprint(event)  # noqa: T203

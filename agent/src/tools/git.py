@@ -6,8 +6,8 @@ from langchain.tools import tool
 @tool
 def git_commit(branch_name: str, commit_message: str, files_to_commit: list[str]):
     """
-    add files, commit them into a branch and push them to remote
-    returns log from operation
+    Add files, commit them into a branch and push them to remote
+    Returns log from operation
     """
     files = [str(f) for f in files_to_commit]
     subprocess.run(["git", "add", *files], check=True, capture_output=True)
@@ -21,22 +21,37 @@ def git_commit(branch_name: str, commit_message: str, files_to_commit: list[str]
 
 
 @tool
-def git_switch(branch_name: str, create_new: bool = True) -> str:
+def git_switch(branch_name: str) -> str:
     """
-    branch change
+    Changes branch based on branch name
     """
-    command = ["git", "switch"]
-    if create_new:
-        command.append("-c")
-    command.append(branch_name)
-    result = subprocess.run(command, check=True, capture_output=True)
-    return result.stdout
+
+    def get_current_branch() -> str:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip()
+
+    if get_current_branch() == branch_name:
+        return f"Already on branch: {branch_name}"
+    check = subprocess.run(
+        ["git", "branch", "--list", branch_name],
+        capture_output=True,
+        text=True,
+    )
+    if check.stdout.strip():
+        subprocess.run(["git", "switch", branch_name])
+        return f"Switched to existing branch: {branch_name}"
+    subprocess.run(["git", "switch", "-c", branch_name])
+    return f"Created and switched to new branch: {branch_name}"
 
 
 @tool
 def git_status() -> str:
     """
-    shows new, modified and ready files for commit
+    Shows new, modified and ready files for commit
     """
     result = subprocess.run(["git", "status", "-s"], check=True, capture_output=True, text=True)
     if not result.stdout.strip():
