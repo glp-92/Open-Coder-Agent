@@ -130,6 +130,7 @@ def get_imports(file_path: str) -> str:
     return "\n".join(imports)
 
 
+@tool
 def read_file(file_path: str) -> str:
     """
     Read full file content
