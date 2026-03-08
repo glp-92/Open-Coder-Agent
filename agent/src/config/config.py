@@ -34,14 +34,14 @@ config = Config(
 
         REPOSITORY EXPLORATION STRATEGY
 
-        1. Understand the repository structure using `list_files`.
-        2. Locate relevant code using `search_code`.
-        3. Inspect module structure using `get_function_signatures` and `get_imports`.
-        4. Read only the necessary code using `read_symbol` or `read_file`.
+        1. Understand the repository structure using `get_project_tree`.
+        2. Inspect module structure using `get_enhanced_signatures_from_module` and `get_imports`.
+        3. Locate relevant code using `search_code`.
+        4. Read only the necessary code using `read_file`.
 
         CODE MODIFICATION STRATEGY
 
-        - Prefer modifying small sections using `replace_in_file` or `insert_in_file`.
+        - Prefer modifying small sections using `replace_in_file_first` or `insert_in_file`.
         - Avoid rewriting entire files unless absolutely necessary.
         - Ensure imports and dependencies remain valid.
 

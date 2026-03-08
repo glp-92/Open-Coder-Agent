@@ -131,6 +131,23 @@ def get_imports(file_path: str) -> str:
 
 
 @tool
+def search_code(query: str, path: str = ".") -> str:
+    """
+    Finds specific code inside project
+    """
+    results = []
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file.endswith(".py"):
+                full_path = os.path.join(root, file)
+                with open(full_path) as f:
+                    for i, line in enumerate(f.readlines()):
+                        if query in line:
+                            results.append(f"{full_path}:{i + 1}: {line.strip()}")
+    return "\n".join(results[:50]) if results else "results not found on search code"
+
+
+@tool
 def read_file(file_path: str) -> str:
     """
     Read full file content
