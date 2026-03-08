@@ -11,6 +11,7 @@ def run(user_input: str) -> None:
             SystemMessage(content=config.agent_config_prompt),
             HumanMessage(content=user_input),
         ],
+        steps=0,
     )
     for event in graph.stream(initial_state, stream_mode="updates"):
         if "messages" in event:
