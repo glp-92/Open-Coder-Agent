@@ -9,12 +9,14 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 
 @dataclass
 class Config:
+    ollama_url: str
     llm_model: str
     agent_config_prompt: str
     max_steps: int
 
 
 config = Config(
+    ollama_url=os.environ.get("OLLAMA_URL", "http://localhost:11434"),
     llm_model=os.environ.get("MODEL_NAME", "qwen3.5:2b"),
     agent_config_prompt="""
         You are a senior software engineer working inside a code repository.
