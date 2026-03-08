@@ -1,49 +1,22 @@
 from config.config import config
-from langchain.agents import create_agent
-from langchain.messages import SystemMessage
-from langchain_ollama import ChatOllama
+from graph.state import AgentState
+from graph.workflow import graph
+from langchain_core.messages import HumanMessage, SystemMessage
 from loguru import logger
-from middlewares.tool_error_handler import tool_error_handler
-from tools.git import git_commit, git_status, git_switch
-from tools.inspector import (
-    create_file,
-    get_function_signatures,
-    get_imports,
-    insert_in_file,
-    list_files,
-    preview_patch,
-    read_file,
-    read_symbol,
-    replace_in_file,
-    search_code,
-)
 
-model = ChatOllama(model=config.llm_model, temperature=0)
-tools = [
-    git_commit,
-    git_status,
-    git_switch,
-    create_file,
-    get_function_signatures,
-    get_imports,
-    insert_in_file,
-    list_files,
-    preview_patch,
-    read_file,
-    read_symbol,
-    replace_in_file,
-    search_code,
-]
-agent = create_agent(
-    model=model,
-    name="coding_assistant",
-    tools=tools,
-    middleware=[tool_error_handler],
-    system_prompt=SystemMessage(content=config.agent_config_prompt),
-)
+
+def run(user_input: str) -> None:
+    initial_state: AgentState = AgentState(
+        messages=[
+            SystemMessage(content=config.agent_config_prompt),
+            HumanMessage(content=user_input),
+        ],
+    )
+    for event in graph.stream(initial_state, stream_mode="updates"):
+        if "messages" in event:
+            msg = event["messages"][-1]
+            logger.info(f"{msg.type}: {msg.content}")
+
 
 if __name__ == "__main__":
-    for event in agent.stream(
-        {"messages": [{"role": "user", "content": "add logging with loguru library to git tools"}]}
-    ):
-        logger.info(event)
+    run("git tools on tools folder must log some steps")

@@ -1,15 +1,17 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path="../../.env")
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 
 
 @dataclass
 class Config:
     llm_model: str
     agent_config_prompt: str
+    max_steps: int
 
 
 config = Config(
@@ -53,4 +55,5 @@ config = Config(
         Always ensure the repository remains in a valid state after modifications
         and produce a final message explaining the changes you made.
     """,
+    max_steps=os.environ.get("AGENT_MAX_STEPS", 30),
 )
