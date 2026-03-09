@@ -53,7 +53,7 @@ config = Config(
         1. Check repository status using `git_status`.
         2. Create or switch to a new branch using `git_switch`.
         3. Implement the required changes.
-        4. Commit the changes using `git_commit`.
+        4. Commit the changes using `git_commit` and specify a commit message according commited changes.
 
         Always ensure the repository remains in a valid state after modifications
         and produce a final message explaining the changes you made.
