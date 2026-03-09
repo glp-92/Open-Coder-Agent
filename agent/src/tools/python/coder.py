@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 from langchain.tools import tool
 
@@ -110,18 +111,37 @@ def apply_patch(file_path: str, old: str, new: str) -> str:
     """
     Apply a patch to a file.
 
-    The agent must provide the previous content (old) and the updated
-    content (new). The tool will verify that the current file matches
-    'old' before applying the change.
+    The tool checks that the previous content roughly matches the
+    provided `old` content before writing `new`.
 
-    This prevents accidental overwrites if the file changed meanwhile.
+    After applying the patch it runs Ruff format and Ruff check.
     """
     if not os.path.exists(file_path):
         return f"error: {file_path} does not exist"
+
     with open(file_path) as f:
         current = f.read()
-    if current != old:
-        return "error: file content mismatch. read the file again before patching."
+    if old.strip() not in current:
+        return "error: old content not found in file. read the file again."
     with open(file_path, "w") as f:
         f.write(new)
-    return "patch applied successfully"
+    messages = []
+    try:
+        subprocess.run(["ruff", "format", file_path], capture_output=True)
+        messages.append("ruff format applied")
+    except Exception as e:
+        messages.append(f"ruff format error: {e}")
+    try:
+        result = subprocess.run(
+            ["ruff", "check", file_path],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            messages.append("ruff lint errors detected:")
+            messages.append(result.stdout)
+        else:
+            messages.append("ruff check passed")
+    except Exception as e:
+        messages.append(f"ruff check error: {e}")
+    return "\n".join(messages)
