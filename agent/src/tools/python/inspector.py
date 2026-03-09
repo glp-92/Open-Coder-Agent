@@ -159,7 +159,13 @@ def read_file(file_path: str) -> str:
 @tool
 def preview_patch(old: str, new: str) -> str:
     """
-    shows diff before apply patch
+    Show unified diff between old and new code.
     """
-    diff = difflib.unified_diff(old.splitlines(), new.splitlines(), lineterm="")
+    diff = difflib.unified_diff(
+        old.splitlines(),
+        new.splitlines(),
+        fromfile="before",
+        tofile="after",
+        lineterm="",
+    )
     return "\n".join(diff)

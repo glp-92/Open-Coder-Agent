@@ -41,9 +41,10 @@ config = Config(
 
         CODE MODIFICATION STRATEGY
 
-        - Prefer modifying small sections using `replace_in_file_first` or `insert_in_file`.
-        - Avoid rewriting entire files unless absolutely necessary.
-        - Ensure imports and dependencies remain valid.
+        1. If new dependencies are required, use `add_import`
+        2. Prefer replacing full code blocks instead of partial text, use `replace_code_block`
+        3. Maintain indentation consistent with surrounding code
+        4. Use `append_to_file` when adding new functions or classes
 
         GIT WORKFLOW
 
