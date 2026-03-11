@@ -73,6 +73,32 @@ def get_project_tree(root: str = ".", agent_ignore_path: str | None = None) -> s
 
 
 @tool
+def validate_path(path_str: str) -> str:
+    """
+    Verifies if a path exists and wich type is (file or directory)
+    Useful before editing files to ensure path is correct.
+    """
+    p = Path(path_str)
+    if not p.exists():
+        # Si no existe, sugerimos rutas similares (opcional)
+        return f"Error: Path '{path_str}' NOT exists."
+    tipo = "Directory" if p.is_dir() else "File"
+    return f"Success: '{path_str}' is an existing {tipo}."
+
+
+@tool
+def list_dir(path: str = ".") -> str:
+    """
+    Lists directory content (only files and folders)
+    """
+    try:
+        items = os.listdir(path)
+        return "\n".join(items)
+    except Exception as e:
+        return f"Error: directory listing: {e}"
+
+
+@tool
 def get_enhanced_signatures_from_module(file_path: str) -> str:
     """
     Extracts high-level signatures: Classes (inheritance, attributes),
@@ -110,7 +136,7 @@ def get_enhanced_signatures_from_module(file_path: str) -> str:
                     m_args = [f"{a.arg}: {get_type_name(a.annotation)}" for a in sub.args.args]
                     m_ret = get_type_name(sub.returns)
                     output.append(f"  def {sub.name}({', '.join(m_args)}) -> {m_ret}{get_summary_doc(sub)}")
-    return "\n".join(output) if output else "No definitions found."
+    return "\n".join(output) if output else "Error: No definitions found."
 
 
 @tool
@@ -118,16 +144,19 @@ def get_imports(file_path: str) -> str:
     """
     Extracts imports from .py file
     """
-    with open(file_path) as f:
-        tree = ast.parse(f.read())
-    imports = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for n in node.names:
-                imports.append(n.name)
-        elif isinstance(node, ast.ImportFrom):
-            imports.append(node.module)
-    return "\n".join(imports)
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+        imports = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for n in node.names:
+                    imports.append(n.name)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imports.append(node.module)
+        return "\n".join(imports) if imports else "No imports found."
+    except Exception as e:
+        return f"Error: Could not read imports from {file_path}: {e}"
 
 
 @tool
@@ -144,7 +173,7 @@ def search_code(query: str, path: str = ".") -> str:
                     for i, line in enumerate(f.readlines()):
                         if query in line:
                             results.append(f"{full_path}:{i + 1}: {line.strip()}")
-    return "\n".join(results[:50]) if results else "results not found on search code"
+    return "\n".join(results[:50]) if results else "Error: results not found on search code"
 
 
 @tool

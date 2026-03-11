@@ -1,5 +1,6 @@
 import os
 import subprocess
+from pathlib import Path
 
 from langchain.tools import tool
 
@@ -7,39 +8,39 @@ from langchain.tools import tool
 @tool
 def create_file(file_path: str, content: str) -> str:
     """
-    Create a new file with the provided content.
+    Create a new file with the provided content. Creates folder if there are not route to file
 
     The file will not be overwritten if it already exists.
     """
-    if os.path.exists(file_path):
-        return f"error: {file_path} already exists"
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w") as f:
-        f.write(content.strip() + "\n")
-    return f"file {file_path} created successfully"
+    try:
+        path = Path(file_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+        return f"Success: file write on: {file_path}"
+    except Exception as e:
+        return f"Error writing file {file_path}: {e!s}"
 
 
 @tool
 def add_import(file_path: str, import_line: str) -> str:
     """
     Add a Python import if it does not already exist.
-
-    The import will be placed with the other imports at the top of the file.
+    This tool uses isort to ensure import is correctly placed
     """
-    if not os.path.exists(file_path):
-        return f"Error: {file_path} does not exist."
-    with open(file_path) as f:
-        lines = f.readlines()
-    if any(import_line.strip() == line.strip() for line in lines):
-        return "import already exists"
-    insert_at = 0
-    for i, line in enumerate(lines):
-        if line.startswith("import ") or line.startswith("from "):
-            insert_at = i + 1
-    lines.insert(insert_at, import_line.strip() + "\n")
-    with open(file_path, "w") as f:
-        f.writelines(lines)
-    return "import added successfully"
+    path = Path(file_path)
+    if not path.exists():
+        return f"Error: {file_path} not exists."
+    content = path.read_text(encoding="utf-8")
+    if import_line.strip() in content:
+        return "Success: Import already exists"
+    new_content = import_line.strip() + "\n" + content
+    path.write_text(new_content, encoding="utf-8")
+    try:
+        # isort ordena y agrupa (ej. stdlib arriba, locales abajo)
+        subprocess.run(["isort", file_path], check=True, capture_output=True)
+        return "Success: Import added and sorted"
+    except Exception as e:
+        return f"Error: isort error but import added: {e}"
 
 
 @tool
@@ -50,16 +51,33 @@ def replace_code_block(file_path: str, old_block: str, new_block: str) -> str:
     The old_block must match the exact code returned by read_file.
     This is safer than partial string replacements.
     """
-    if not os.path.exists(file_path):
-        return f"Error: {file_path} does not exist."
-    with open(file_path) as f:
-        content = f.read()
+    path = Path(file_path)
+    if not path.exists():
+        return f"Error: El archivo {file_path} no existe."
+    content = path.read_text(encoding="utf-8")
     if old_block not in content:
-        return "error: old block not found"
-    updated = content.replace(old_block, new_block, 1)
-    with open(file_path, "w") as f:
-        f.write(updated)
-    return "code block replaced successfully"
+        return "Error: Not found block to replace. Be careful with spaces and indentation"
+    lines_old = old_block.splitlines()
+    base_indent = ""
+    for line in lines_old:
+        if line.strip():
+            base_indent = line[: len(line) - len(line.lstrip())]
+            break
+    lines_new = new_block.splitlines()
+    normalized_new = []
+    for line in lines_new:
+        if line.strip():
+            current_indent = line[: len(line) - len(line.lstrip())]
+            if not current_indent.startswith(base_indent):
+                normalized_new.append(base_indent + line.lstrip())
+            else:
+                normalized_new.append(line)
+        else:
+            normalized_new.append("")
+    final_new_block = "\n".join(normalized_new)
+    new_content = content.replace(old_block, final_new_block)
+    path.write_text(new_content, encoding="utf-8")
+    return f"Success: File {file_path} update"
 
 
 @tool
@@ -70,23 +88,21 @@ def insert_after_line(file_path: str, anchor: str, content: str) -> str:
     The inserted content will automatically inherit the indentation
     of the anchor line to avoid syntax errors.
     """
-
-    def _get_indent(line: str) -> str:
-        return line[: len(line) - len(line.lstrip())]
-
-    if not os.path.exists(file_path):
+    path = Path(file_path)
+    if not path.exists():
         return f"Error: {file_path} does not exist."
-    with open(file_path) as f:
-        lines = f.readlines()
+
+    lines = path.read_text().splitlines()
     for i, line in enumerate(lines):
         if anchor in line:
-            indent = _get_indent(line)
-            adjusted = "\n".join(indent + line if line.strip() else line for line in content.splitlines()) + "\n"
-            lines.insert(i + 1, adjusted)
-            with open(file_path, "w") as f:
-                f.writelines(lines)
-            return "content insertion success"
-    return "anchor not found for content insert after line"
+            indent = line[: len(line) - len(line.lstrip())]
+            extra_indent = "    " if line.strip().endswith(":") else ""
+            new_lines = [indent + extra_indent + line if line.strip() else line for line in content.splitlines()]
+            final_lines = lines[: i + 1] + new_lines + lines[i + 1 :]
+            path.write_text("\n".join(final_lines) + "\n")
+            return "Success: Content insert with correct indent"
+
+    return "Error: anchor for content insert not found"
 
 
 @tool
@@ -103,11 +119,11 @@ def append_to_file(file_path: str, content: str) -> str:
     with open(file_path, "a") as f:
         f.write("\n" + content.strip() + "\n")
 
-    return "content appended successfully"
+    return "Success: content appended"
 
 
 @tool
-def apply_patch(file_path: str, old: str, new: str) -> str:
+def apply_patch(file_path: str, old_code: str, new_code: str) -> str:
     """
     Apply a patch to a file.
 
@@ -116,32 +132,15 @@ def apply_patch(file_path: str, old: str, new: str) -> str:
 
     After applying the patch it runs Ruff format and Ruff check.
     """
-    if not os.path.exists(file_path):
-        return f"error: {file_path} does not exist"
-
-    with open(file_path) as f:
-        current = f.read()
-    if old.strip() not in current:
-        return "error: old content not found in file. read the file again."
-    with open(file_path, "w") as f:
-        f.write(new)
-    messages = []
+    path = Path(file_path)
+    content = path.read_text()
+    if old_code.strip() not in content.strip():
+        return "Error: Block does not match, try more precise fragment."
+    new_content = content.replace(old_code.strip(), new_code.strip())
+    path.write_text(new_content)
     try:
-        subprocess.run(["ruff", "format", file_path], capture_output=True)
-        messages.append("ruff format applied")
-    except Exception as e:
-        messages.append(f"ruff format error: {e}")
-    try:
-        result = subprocess.run(
-            ["ruff", "check", file_path],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            messages.append("ruff lint errors detected:")
-            messages.append(result.stdout)
-        else:
-            messages.append("ruff check passed")
-    except Exception as e:
-        messages.append(f"ruff check error: {e}")
-    return "\n".join(messages)
+        subprocess.run(["ruff", "format", file_path], check=True)
+        subprocess.run(["ruff", "check", "--fix", file_path], check=True)
+        return f"Edition success and code placed on {file_path}"
+    except subprocess.CalledProcessError as e:
+        return f"Error: Code insert success but errors on ruff format and check: {e.stderr}"

@@ -3,57 +3,51 @@ import subprocess
 from langchain.tools import tool
 
 
-@tool
-def git_commit(branch_name: str, commit_message: str, files_to_commit: list[str]):
+def _run_git_command(args: list[str]) -> str:
     """
-    Add files, commit them into a branch and push them to remote
-    Returns log from operation
+    Function to run git commands on a safe way
     """
-    files = [str(f) for f in files_to_commit]
-    subprocess.run(["git", "add", *files], check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "push", "-u", "origin", branch_name],
-        check=True,
-        capture_output=True,
-    )
-    return f"commit success to branch {branch_name}"
-
-
-@tool
-def git_switch(branch_name: str) -> str:
-    """
-    Changes branch based on branch name
-    """
-
-    def get_current_branch() -> str:
-        result = subprocess.run(
-            ["git", "branch", "--show-current"],
-            capture_output=True,
-            text=True,
-        )
-        return result.stdout.strip()
-
-    if get_current_branch() == branch_name:
-        return f"Already on branch: {branch_name}"
-    check = subprocess.run(
-        ["git", "branch", "--list", branch_name],
-        capture_output=True,
-        text=True,
-    )
-    if check.stdout.strip():
-        subprocess.run(["git", "switch", branch_name])
-        return f"Switched to existing branch: {branch_name}"
-    subprocess.run(["git", "switch", "-c", branch_name])
-    return f"Created and switched to new branch: {branch_name}"
+    try:
+        result = subprocess.run(args, check=True, capture_output=True, text=True)
+        return result.stdout.strip() or f"operation {args[1]} success"
+    except subprocess.CalledProcessError as e:
+        return f"Error ejecutando {' '.join(args)}: {e.stderr}"
 
 
 @tool
 def git_status() -> str:
     """
-    Shows new, modified and ready files for commit
+    Shows current repository state (new, modified or ready files).
     """
-    result = subprocess.run(["git", "status", "-s"], check=True, capture_output=True, text=True)
-    if not result.stdout.strip():
-        return "nothing to commit"
-    return f"current repo status: {result.stdout}"
+    status = _run_git_command(["git", "status", "-s"])
+    return status if status else "El repositorio está limpio."
+
+
+@tool
+def git_switch(branch_name: str) -> str:
+    """
+    Changes to a branch or creates a new one if not exists
+    """
+    res = subprocess.run(["git", "switch", branch_name], capture_output=True, text=True)
+    if res.returncode == 0:
+        return f"Changing to existing branch: {branch_name}"
+    return _run_git_command(["git", "switch", "-c", branch_name])
+
+
+@tool
+def git_commit_and_push(branch_name: str, commit_message: str, files: list[str] | None = None) -> str:
+    """
+    Add files to staging area, commit them and open a remote branch
+    Returns log from operation
+    """
+    if files:
+        _run_git_command(["git", "add", *files])
+    else:
+        _run_git_command(["git", "add", "."])
+
+    commit_res = _run_git_command(["git", "commit", "-m", commit_message])
+    if "Error" in commit_res:
+        return commit_res
+
+    push_res = _run_git_command(["git", "push", "-u", "origin", branch_name])
+    return f"commit and push on: {commit_res}\n{push_res}"

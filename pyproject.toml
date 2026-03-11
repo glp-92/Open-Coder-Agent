@@ -5,6 +5,7 @@ description = "Monorepo for API and AI Agent services"
 requires-python = "==3.12.*"
 # Common dependencies to agent and api
 dependencies = [
+    "isort>=8.0.1",
     "loguru>=0.7.3",
 ]
 
