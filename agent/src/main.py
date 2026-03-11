@@ -7,11 +7,7 @@ from loguru import logger
 
 def run(user_input: str) -> None:
     full_system_prompt: str = (
-        f"{config.agent_config_prompt}\n\n"
-        f"REPOSITORY CONTEXT:\n"
-        f"- Root Path: {config.repository_root_path}\n"
-        f"- Ignore Rules: Use '{config.agent_ignore_path}' when calling `get_project_tree` to avoid noise.\n"
-        # f"- Behavior: All file and git operations must be relative to the Root Path."
+        f"{config.agent_config_prompt}\n\nREPOSITORY CONTEXT:\n- Root Path: {config.repository_root_path}\n"
     )
     initial_state: AgentState = AgentState(
         messages=[
@@ -35,10 +31,7 @@ def run(user_input: str) -> None:
                         for tool in last_message.tool_calls:
                             logger.info(f"🛠️  AI Calling: {tool['name']}({tool['args']})")
                 elif last_message.type == "tool":
-                    if "error" not in last_message.content.lower():
-                        logger.info(f"✅ Result [{last_message.name}]:\n{last_message.content}")
-                    else:
-                        logger.error(f"❌ Result [{last_message.name}]:\n{last_message.content}")
+                    logger.info(f"Result [{last_message.name}]:\n{last_message.content}")
     logger.info("\n" + "=" * 52 + f"\n✅ {'TASK FINISHED':^50}\n")
 
 

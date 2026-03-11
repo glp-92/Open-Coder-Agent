@@ -19,6 +19,10 @@ IGNORE_DIRS: set = {
     ".pytest_cache",
     ".idea",
     ".vscode",
+    "ollama-server",
+    "ollama-data",
+    "data",
+    "db-data",
 }
 
 IGNORE_EXTENSIONS: set = {
@@ -73,17 +77,17 @@ def get_project_tree(root: str = ".", agent_ignore_path: str | None = None) -> s
 
 
 @tool
-def validate_path(path_str: str) -> str:
+def validate_path(path: str) -> str:
     """
     Verifies if a path exists and wich type is (file or directory)
     Useful before editing files to ensure path is correct.
     """
-    p = Path(path_str)
+    p = Path(path)
     if not p.exists():
         # Si no existe, sugerimos rutas similares (opcional)
-        return f"Error: Path '{path_str}' NOT exists."
+        return f"Error: Path '{path}' NOT exists."
     tipo = "Directory" if p.is_dir() else "File"
-    return f"Success: '{path_str}' is an existing {tipo}."
+    return f"Success: '{path}' is an existing {tipo}."
 
 
 @tool
@@ -160,7 +164,7 @@ def get_imports(file_path: str) -> str:
 
 
 @tool
-def search_code(query: str, path: str = ".") -> str:
+def search_code(code_to_search: str, path: str = ".") -> str:
     """
     Finds specific code inside project
     """
@@ -171,7 +175,7 @@ def search_code(query: str, path: str = ".") -> str:
                 full_path = os.path.join(root, file)
                 with open(full_path) as f:
                     for i, line in enumerate(f.readlines()):
-                        if query in line:
+                        if code_to_search in line:
                             results.append(f"{full_path}:{i + 1}: {line.strip()}")
     return "\n".join(results[:50]) if results else "Error: results not found on search code"
 
