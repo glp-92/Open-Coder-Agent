@@ -6,12 +6,12 @@ from loguru import logger
 
 
 def run(user_input: str) -> None:
-    full_system_prompt = (
+    full_system_prompt: str = (
         f"{config.agent_config_prompt}\n\n"
-        f"CONTEXTO DEL REPOSITORIO:\n"
-        f"La ruta raíz actual es: {config.repository_root_path}\n"
-        f"Asume que todos los comandos de git y herramientas de archivos deben ejecutarse "
-        f"relativos a esta ruta o usando esta ruta como base."
+        f"REPOSITORY CONTEXT:\n"
+        f"- Root Path: {config.repository_root_path}\n"
+        f"- Ignore Rules: Use '{config.agent_ignore_path}' when calling `get_project_tree` to avoid noise.\n"
+        # f"- Behavior: All file and git operations must be relative to the Root Path."
     )
     initial_state: AgentState = AgentState(
         messages=[

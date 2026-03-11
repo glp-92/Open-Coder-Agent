@@ -1,0 +1,5 @@
+.ruff_cache
+data 
+ollama-data 
+ollama-server
+docker-compose.yml
