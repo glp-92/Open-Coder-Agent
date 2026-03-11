@@ -6,9 +6,16 @@ from loguru import logger
 
 
 def run(user_input: str) -> None:
+    full_system_prompt = (
+        f"{config.agent_config_prompt}\n\n"
+        f"CONTEXTO DEL REPOSITORIO:\n"
+        f"La ruta raíz actual es: {config.repository_root_path}\n"
+        f"Asume que todos los comandos de git y herramientas de archivos deben ejecutarse "
+        f"relativos a esta ruta o usando esta ruta como base."
+    )
     initial_state: AgentState = AgentState(
         messages=[
-            SystemMessage(content=config.agent_config_prompt),
+            SystemMessage(content=full_system_prompt),
             HumanMessage(content=user_input),
         ],
         steps=0,

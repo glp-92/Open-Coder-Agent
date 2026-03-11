@@ -13,6 +13,7 @@ class Config:
     llm_model: str
     agent_config_prompt: str
     max_steps: int
+    repository_root_path: str
 
 
 with open(Path(__file__).resolve().parent / "prompt.md") as file:
@@ -23,4 +24,5 @@ config = Config(
     llm_model=os.environ.get("MODEL_NAME", "qwen3.5:2b"),
     agent_config_prompt=prompt,
     max_steps=os.environ.get("AGENT_MAX_STEPS", 30),
+    repository_root_path=os.environ.get("REPOSITORY_ROOT_PATH", "."),
 )
