@@ -36,5 +36,5 @@ def run(user_input: str) -> None:
 
 if __name__ == "__main__":
     run(
-        "you are accessing an empty repository, this will be a test app to test your python coding skills. First of all write a `Readme.md` indicating that this program is a test, then write a pythonic `main.py` printing 'hello world¡, then, try to add a module that makes a function to sum two numbers"  # noqa: E501
+        "you are accessing an empty repository, this will be a test app to test your python coding skills. Write a calculator program. Write the codebase and lastly write a Readme.md indicating how it works"  # noqa: E501
     )

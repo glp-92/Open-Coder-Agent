@@ -1,3 +1,4 @@
+import json
 import subprocess
 
 from langchain.tools import tool
@@ -7,10 +8,31 @@ from tools.utilities import run_subprocess_from_root_path
 @tool
 def git_status() -> str:
     """
-    Shows current repository state (new, modified or ready files).
+    Shows current repository state.
+    Returns structured JSON.
     """
     status = run_subprocess_from_root_path(["git", "status", "-s"])
-    return status if status else "El repositorio está limpio."
+    modified = []
+    added = []
+    deleted = []
+    for line in status.splitlines():
+        code, file = line[:2].strip(), line[3:]
+        if "M" in code:
+            modified.append(file)
+        elif "A" in code:
+            added.append(file)
+        elif "D" in code:
+            deleted.append(file)
+    return f"Success: {
+        json.dumps(
+            {
+                'modified': modified,
+                'added': added,
+                'deleted': deleted,
+            },
+            indent=2,
+        )
+    }"
 
 
 @tool
