@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from langchain.tools import tool
-from tools.utilities import IGNORE_DIRS, IGNORE_EXTENSIONS, REPOSITORY_ROOT_PATH, _resolve_path
+from tools.utilities import IGNORE_DIRS, IGNORE_EXTENSIONS, REPOSITORY_ROOT_PATH, resolve_path
 
 
 @tool
@@ -53,7 +53,7 @@ def list_dir(path: str = ".") -> str:
     """
     Lists directory content (only files and folders)
     """
-    absolute_path: str = str(_resolve_path(file_path=path))
+    absolute_path: str = str(resolve_path(file_path=path))
     try:
         items = os.listdir(str(absolute_path))
         return "\n".join(items)
@@ -77,7 +77,7 @@ def get_enhanced_signatures_from_module(file_path: str) -> str:
             return f" # {doc.splitlines()[0]}"
         return ""
 
-    absolute_path: str = str(_resolve_path(file_path=file_path))
+    absolute_path: str = str(resolve_path(file_path=file_path))
     try:
         with open(absolute_path, encoding="utf-8") as f:
             tree = ast.parse(f.read())
@@ -108,7 +108,7 @@ def get_imports(file_path: str) -> str:
     """
     Extracts imports from .py file
     """
-    absolute_path: str = str(_resolve_path(file_path=file_path))
+    absolute_path: str = str(resolve_path(file_path=file_path))
     try:
         with open(absolute_path, encoding="utf-8") as f:
             tree = ast.parse(f.read())
@@ -129,7 +129,7 @@ def search_code(code_to_search: str, path: str = ".") -> str:
     """
     Finds specific code inside project
     """
-    absolute_path: str = str(_resolve_path(file_path=path))
+    absolute_path: str = str(resolve_path(file_path=path))
     results = []
     for root, _, files in os.walk(absolute_path):
         for file in files:
@@ -150,7 +150,7 @@ def read_file(file_path: str) -> str:
     The path must be relative to the repository root.
     """
     try:
-        path = _resolve_path(file_path)
+        path = resolve_path(file_path)
         if not path.exists():
             return f"Error: {file_path} does not exist."
         return path.read_text(encoding="utf-8")
