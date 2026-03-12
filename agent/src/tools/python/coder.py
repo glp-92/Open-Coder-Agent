@@ -1,8 +1,5 @@
-import subprocess
-from pathlib import Path
-
 from langchain.tools import tool
-from tools.utilities import REPOSITORY_ROOT_PATH, _resolve_path
+from tools.utilities import resolve_path, run_subprocess_from_root_path
 
 
 @tool
@@ -13,7 +10,7 @@ def create_file(file_path: str, content: str) -> str:
     The file will not be overwritten if it already exists.
     """
     try:
-        path = Path(file_path)
+        path = resolve_path(file_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         return f"Success: file write on: {file_path}"
@@ -31,7 +28,7 @@ def write_file(file_path: str, content: str) -> str:
     Missing directories will be created automatically.
     """
     try:
-        path = _resolve_path(file_path)
+        path = resolve_path(file_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         return f"Success: wrote file {file_path}"
@@ -51,21 +48,16 @@ def run_linting() -> str:
 
     Returns combined output.
     """
-    commands = [
+    cmds_args: list[str] = [
         ["isort", "."],
         ["ruff", "format", "."],
         ["ruff", "check", ".", "--fix"],
     ]
     outputs = []
     try:
-        for cmd in commands:
-            result = subprocess.run(
-                cmd,
-                cwd=REPOSITORY_ROOT_PATH,
-                capture_output=True,
-                text=True,
-            )
-            outputs.append(f"$ {' '.join(cmd)}\n{result.stdout}\n{result.stderr}")
-        return "\n".join(outputs) or "Success: Linting completed."
+        for cmd_args in cmds_args:
+            result: str = run_subprocess_from_root_path(args=cmd_args)
+            outputs.append(f"$ {' '.join(result)}")
+        return "\n".join(outputs)
     except Exception as e:
         return f"Error running linting: {e}"

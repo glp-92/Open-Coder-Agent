@@ -6,19 +6,18 @@ from loguru import logger
 
 
 def run(user_input: str) -> None:
-    full_system_prompt: str = (
-        f"{config.agent_config_prompt}\n\nREPOSITORY CONTEXT:\n- Root Path: {config.repository_root_path}\n"
-    )
     initial_state: AgentState = AgentState(
         messages=[
-            SystemMessage(content=full_system_prompt),
+            SystemMessage(content=config.agent_config_prompt),
             HumanMessage(content=user_input),
         ],
         steps=0,
         current_branch=None,
     )
     logger.info(f"\n🚀 {'RUNNING AGENT':^50}\n" + "=" * 52)
-    logger.info(f"Model {config.llm_model}, Ollama Server {config.ollama_url}")
+    logger.info(
+        f"Model {config.llm_model}, Ollama Server {config.ollama_url}, repository root {config.repository_root_path}"
+    )
     for event in graph.stream(initial_state, stream_mode="updates"):
         for node_name, state_update in event.items():
             logger.info(f"\n>>> Node: {node_name}")
@@ -36,4 +35,6 @@ def run(user_input: str) -> None:
 
 
 if __name__ == "__main__":
-    run("add logging functions on git tools package to ensure every operation is correctly logged")
+    run(
+        "you are accessing an empty repository, this will be a test app to test your python coding skills. First of all write a `Readme.md` indicating that this program is a test, then write a pythonic `main.py` printing 'hello world¡"  # noqa: E501
+    )
