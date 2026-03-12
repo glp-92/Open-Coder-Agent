@@ -4,48 +4,20 @@ import os
 from pathlib import Path
 
 from langchain.tools import tool
-
-IGNORE_DIRS: set = {
-    ".git",
-    "__pycache__",
-    "node_modules",
-    "venv",
-    ".venv",
-    "env",
-    ".env",
-    "dist",
-    "build",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".idea",
-    ".vscode",
-    "ollama-server",
-    "ollama-data",
-    "data",
-    "db-data",
-}
-
-IGNORE_EXTENSIONS: set = {
-    ".pyc",
-    ".pyo",
-    ".log",
-    ".lock",
-}
+from tools.utilities import IGNORE_DIRS, IGNORE_EXTENSIONS, REPOSITORY_ROOT_PATH, _resolve_path
 
 
 @tool
-def get_project_tree(root: str = ".", agent_ignore_path: str | None = None) -> str:
+def get_repository_tree() -> str:
     """
     Obtain a directory tree from a root path.
     Some folders and extensions are ignored, by default and if agentignore file exists containing some files
     """
-    root_path = Path(root)
     agent_ignores = set()
-    if agent_ignore_path:
-        ignore_file = root_path / agent_ignore_path
-        if ignore_file.exists():
-            with open(ignore_file) as f:
-                agent_ignores = {line.strip() for line in f if line.strip() and not line.startswith("#")}
+    ignore_file: Path = REPOSITORY_ROOT_PATH / ".agentignore"
+    if ignore_file.exists():
+        with open(ignore_file) as f:
+            agent_ignores = {line.strip() for line in f if line.strip() and not line.startswith("#")}
 
     def build_tree(current_path: Path, prefix: str = "") -> list[str]:
         lines = []
@@ -69,25 +41,11 @@ def get_project_tree(root: str = ".", agent_ignore_path: str | None = None) -> s
                 lines.extend(build_tree(item, new_prefix))
         return lines
 
-    if not root_path.exists():
+    if not REPOSITORY_ROOT_PATH.exists():
         return "Error: Root path not found"
-    output = [f"{root_path.name}/"]
-    output.extend(build_tree(root_path))
+    output = [f"{REPOSITORY_ROOT_PATH.name}/"]
+    output.extend(build_tree(REPOSITORY_ROOT_PATH))
     return "\n".join(output)
-
-
-@tool
-def validate_path(path: str) -> str:
-    """
-    Verifies if a path exists and wich type is (file or directory)
-    Useful before editing files to ensure path is correct.
-    """
-    p = Path(path)
-    if not p.exists():
-        # Si no existe, sugerimos rutas similares (opcional)
-        return f"Error: Path '{path}' NOT exists."
-    tipo = "Directory" if p.is_dir() else "File"
-    return f"Success: '{path}' is an existing {tipo}."
 
 
 @tool
@@ -95,8 +53,9 @@ def list_dir(path: str = ".") -> str:
     """
     Lists directory content (only files and folders)
     """
+    absolute_path: str = str(_resolve_path(file_path=path))
     try:
-        items = os.listdir(path)
+        items = os.listdir(str(absolute_path))
         return "\n".join(items)
     except Exception as e:
         return f"Error: directory listing: {e}"
@@ -118,8 +77,9 @@ def get_enhanced_signatures_from_module(file_path: str) -> str:
             return f" # {doc.splitlines()[0]}"
         return ""
 
+    absolute_path: str = str(_resolve_path(file_path=file_path))
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(absolute_path, encoding="utf-8") as f:
             tree = ast.parse(f.read())
     except Exception as e:
         return f"Error: {e}"
@@ -148,8 +108,9 @@ def get_imports(file_path: str) -> str:
     """
     Extracts imports from .py file
     """
+    absolute_path: str = str(_resolve_path(file_path=file_path))
     try:
-        with open(file_path, encoding="utf-8") as f:
+        with open(absolute_path, encoding="utf-8") as f:
             tree = ast.parse(f.read())
         imports = []
         for node in ast.walk(tree):
@@ -160,7 +121,7 @@ def get_imports(file_path: str) -> str:
                 imports.append(node.module)
         return "\n".join(imports) if imports else "No imports found."
     except Exception as e:
-        return f"Error: Could not read imports from {file_path}: {e}"
+        return f"Error: Could not read imports from {absolute_path}: {e}"
 
 
 @tool
@@ -168,8 +129,9 @@ def search_code(code_to_search: str, path: str = ".") -> str:
     """
     Finds specific code inside project
     """
+    absolute_path: str = str(_resolve_path(file_path=path))
     results = []
-    for root, _, files in os.walk(path):
+    for root, _, files in os.walk(absolute_path):
         for file in files:
             if file.endswith(".py"):
                 full_path = os.path.join(root, file)
@@ -183,10 +145,17 @@ def search_code(code_to_search: str, path: str = ".") -> str:
 @tool
 def read_file(file_path: str) -> str:
     """
-    Read full file content
+    Read the full content of a file inside the repository.
+
+    The path must be relative to the repository root.
     """
-    with open(file_path) as f:
-        return f.read()
+    try:
+        path = _resolve_path(file_path)
+        if not path.exists():
+            return f"Error: {file_path} does not exist."
+        return path.read_text(encoding="utf-8")
+    except Exception as e:
+        return f"Error reading {file_path}: {e}"
 
 
 @tool

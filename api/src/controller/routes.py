@@ -1,6 +1,5 @@
-from fastapi import APIRouter
-
 from dto.requests import CardMovedWebhookRequest
+from fastapi import APIRouter
 from model.card_moved_event import CardMovedEvent
 
 router = APIRouter()
