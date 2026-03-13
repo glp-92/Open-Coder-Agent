@@ -23,7 +23,7 @@ def git_status() -> str:
             added.append(file)
         elif "D" in code:
             deleted.append(file)
-    return f"Success: {
+    return f"Success: \n{
         json.dumps(
             {
                 'modified': modified,
@@ -49,7 +49,7 @@ def git_switch(branch_name: str) -> str:
 @tool
 def git_commit_and_push(branch_name: str, commit_message: str, files: list[str] | None = None) -> str:
     """
-    Add files to staging area, commit them and open a remote branch
+    Add files to staging area, commit them and push to a remote branch
     Returns log from operation
     """
     if files:
