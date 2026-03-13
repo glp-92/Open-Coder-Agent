@@ -1,3 +1,5 @@
+import sys
+
 from config.config import config
 from graph.state import AgentState
 from graph.workflow import graph
@@ -35,6 +37,5 @@ def run(user_input: str) -> None:
 
 
 if __name__ == "__main__":
-    run(
-        "you are accessing an empty repository, this will be a test app to test your python coding skills. Write a calculator program. Write the codebase and lastly write a Readme.md indicating how it works"  # noqa: E501
-    )
+    user_input: str = sys.argv[1]
+    run(user_input=user_input)
