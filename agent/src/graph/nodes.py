@@ -36,10 +36,7 @@ def explorer_node(state: AgentState):
     if state["steps"] > config.max_steps:
         return {"steps": steps, "messages": [AIMessage(content="Stopping: too many steps")]}
     msgs = state["messages"]
-    filtered_messages = (
-        [msgs[0], *msgs[-config.max_chat_history :]] if len(msgs) > config.max_chat_history + 1 else msgs
-    )
-    response = model.invoke(filtered_messages)
+    response = model.invoke(msgs)
     return {"messages": [response], "steps": state["steps"] + 1}
 
 
