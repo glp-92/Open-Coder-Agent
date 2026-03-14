@@ -1,5 +1,4 @@
 import json
-import subprocess
 
 from langchain.tools import tool
 from tools.utilities import run_subprocess_from_root_path
@@ -8,42 +7,50 @@ from tools.utilities import run_subprocess_from_root_path
 @tool
 def git_status() -> str:
     """
-    Shows current repository state.
-    Returns structured JSON.
+    Shows current repository state (modified, added, deleted, untracked files).
+    Use this to see what files need to be committed.
     """
-    status = run_subprocess_from_root_path(["git", "status", "-s"])
-    modified = []
-    added = []
-    deleted = []
+    # Usamos -u para ver también archivos untracked individuales
+    status = run_subprocess_from_root_path(["git", "status", "-s", "-u"])
+    files = {"modified": [], "added": [], "deleted": [], "untracked": []}
     for line in status.splitlines():
-        code, file = line[:2].strip(), line[3:]
+        if len(line) < 3:
+            continue
+        code, file = line[:2].strip(), line[3:].strip()
         if "M" in code:
-            modified.append(file)
+            files["modified"].append(file)
         elif "A" in code:
-            added.append(file)
+            files["added"].append(file)
         elif "D" in code:
-            deleted.append(file)
-    return f"Success: \n{
-        json.dumps(
-            {
-                'modified': modified,
-                'added': added,
-                'deleted': deleted,
-            },
-            indent=2,
-        )
-    }"
+            files["deleted"].append(file)
+        elif "??" in code:
+            files["untracked"].append(file)
+    return json.dumps(files, indent=2)
 
 
 @tool
-def git_switch(branch_name: str) -> str:
+def git_diff() -> str:
     """
-    Changes to a branch or creates a new one if not exists
+    Shows the actual code changes in the staged and unstaged files.
+    IMPORTANT: Use this before committing to understand what you are saving.
     """
-    res = subprocess.run(["git", "switch", branch_name], capture_output=True, text=True)
-    if res.returncode == 0:
-        return f"Changing to existing branch: {branch_name}"
-    return run_subprocess_from_root_path(["git", "switch", "-c", branch_name])
+    diff = run_subprocess_from_root_path(["git", "diff", "HEAD"])
+    if not diff.strip():
+        return "No changes detected between HEAD and working directory."
+    return diff[:4000]
+
+
+@tool
+def git_switch(branch_name: str, create_new: bool = False) -> str:
+    """
+    Switches to a branch. If create_new is True, it creates it (-c).
+    """
+    cmd = ["git", "switch", "-c", branch_name] if create_new else ["git", "switch", branch_name]
+    try:
+        res: str = run_subprocess_from_root_path(args=cmd)
+        return f"{res}"
+    except Exception as e:
+        return f"Exception: {e!s}"
 
 
 @tool
@@ -56,8 +63,12 @@ def git_commit_and_push(branch_name: str, commit_message: str, files: list[str] 
         run_subprocess_from_root_path(["git", "add", *files])
     else:
         run_subprocess_from_root_path(["git", "add", "."])
-    commit_res = run_subprocess_from_root_path(["git", "commit", "-m", commit_message])
+
+    commit_res: str = run_subprocess_from_root_path(["git", "commit", "-m", commit_message])
     if "Error" in commit_res:
         return commit_res
+    check_remote: str = run_subprocess_from_root_path(["git", "remote"])
+    if "origin" not in check_remote:
+        return f"Success: Committed locally as '{commit_message}'. NOTE: Push skipped because no remote 'origin' is configured."  # noqa: E501
     push_res = run_subprocess_from_root_path(["git", "push", "-u", "origin", branch_name])
     return f"commit and push on: {commit_res}\n{push_res}"

@@ -57,7 +57,7 @@ def run_linting() -> str:
     try:
         for cmd_args in cmds_args:
             result: str = run_subprocess_from_root_path(args=cmd_args)
-            outputs.append(f"$ {' '.join(result)}")
+            outputs.append(f"$ {result}")
         return "\n".join(outputs)
     except Exception as e:
         return f"Error running linting: {e}"

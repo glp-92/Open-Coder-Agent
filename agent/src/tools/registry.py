@@ -14,5 +14,6 @@ TOOLS_REGISTRY: list[callable] = [
     tools.python.coder.run_linting,
     tools.common.git.git_commit_and_push,
     tools.common.git.git_status,
+    tools.common.git.git_diff,
     tools.common.git.git_switch,
 ]

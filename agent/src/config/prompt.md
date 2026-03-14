@@ -45,7 +45,8 @@ If linting reports errors, fix the code and run linting again.
 ## 4. Finalize
 
 1. Check changes using `git_status`.
-2. Commit and push using `git_commit_and_push`.
+2. Use `git diff` to get context of changes.
+3. Apply changes with `git_commit_and_push`, if not remote configured just skip and finish
 
 # Output
 
