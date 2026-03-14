@@ -1,3 +1,5 @@
+import traceback
+
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langgraph.graph.state import StateGraph
 from rich.console import Console
@@ -49,5 +51,6 @@ def run_cli(user_input: str, graph: StateGraph, initial_state: any):
         console.print("\n[bold red]🛑 Process finished by user.[/bold red]")
     except Exception as e:
         console.print(f"\n[bold red]❌ Critical error:[/bold red] {e}")
+        console.print(f"\n[bold red]{traceback.format_exc()}[/bold red]")
     finally:
         console.print("✅ [bold green]FINISHED TASK[/bold green]", justify="center")

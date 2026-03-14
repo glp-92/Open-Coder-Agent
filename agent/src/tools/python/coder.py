@@ -24,9 +24,12 @@ def create_file(file_path: str, content: str) -> str:
     """
     try:
         path = resolve_path(file_path)
+        if path.exists():
+            path.write_text(content, encoding="utf-8")
+            return f"Success: wrote existing file {file_path}"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-        return f"Success: file write on: {file_path}"
+        return f"Success: created new file {file_path}"
     except Exception as e:
         return f"Error: writing file {file_path}: {e!s}"
 
@@ -37,14 +40,17 @@ def write_file(file_path: str, content: str) -> str:
     Write a full file inside the repository.
 
     The path must be relative to the repository root.
-    If the file exists it will be overwritten.
+    If the file exists it will be overwritten, and function will notice it.
     Missing directories will be created automatically.
     """
     try:
         path = resolve_path(file_path)
+        if path.exists():
+            path.write_text(content, encoding="utf-8")
+            return f"Success: wrote existing file {file_path}"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-        return f"Success: wrote file {file_path}"
+        return f"Success: wrote new file {file_path}"
     except Exception as e:
         return f"Error: writing code on {file_path}: {e}"
 

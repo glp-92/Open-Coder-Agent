@@ -44,6 +44,9 @@ def get_repository_tree() -> str:
     if not REPOSITORY_ROOT_PATH.exists():
         return "Error: Root path not found"
     output = [f"{REPOSITORY_ROOT_PATH.name}/"]
+    tree: list[str] = build_tree(REPOSITORY_ROOT_PATH)
+    if not tree:
+        return "Warning: Empty repository"
     output.extend(build_tree(REPOSITORY_ROOT_PATH))
     return "\n".join(output)
 
@@ -56,7 +59,7 @@ def list_dir(path: str = ".") -> str:
     absolute_path: str = str(resolve_path(file_path=path))
     try:
         items = os.listdir(str(absolute_path))
-        return "\n".join(items)
+        return "\n".join(items) if items else "Warning: Empty directory"
     except Exception as e:
         return f"Error: directory listing: {e}"
 

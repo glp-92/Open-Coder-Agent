@@ -21,6 +21,7 @@ IGNORE_DIRS: set = {
     "ollama-data",
     "data",
     "db-data",
+    ".ruff_cache",
 }
 IGNORE_EXTENSIONS: set = {
     ".pyc",

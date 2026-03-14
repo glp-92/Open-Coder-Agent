@@ -13,6 +13,8 @@ class Config:
     llm_model: str
     agent_config_prompt: str
     max_steps: int
+    max_messages_for_summary: int
+    max_chat_history: int
     repository_root_path: str
 
 
@@ -27,5 +29,7 @@ config = Config(
     llm_model=os.environ.get("MODEL_NAME", "qwen3.5:2b"),
     agent_config_prompt=prompt,
     max_steps=os.environ.get("AGENT_MAX_STEPS", 30),
+    max_messages_for_summary=os.environ.get("AGENT_MAX_MESSAGES_FOR_SUMMARY", 5),
+    max_chat_history=os.environ.get("AGENT_MAX_CHAT_HISTORY", 8),
     repository_root_path=repository_root_path,
 )
