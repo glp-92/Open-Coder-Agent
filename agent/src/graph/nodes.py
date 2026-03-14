@@ -10,21 +10,23 @@ tool_node = ToolNode(tools=TOOLS_REGISTRY, messages_key="messages")
 
 def memory_manager_node(state: AgentState):
     """
-    Makes a summary of oldest messages keeping last 3 entire on memory
+    Makes a summary of oldest 'config.messages_to_summarize' messages
+    when the maximum amount of messages to make a summary is reached
     """
     messages = state["messages"]
     steps = state.get("steps", 0)
     if len(messages) > config.max_messages_for_summary:
-        system_prompt = messages[0]
-        immediate_context = messages[-3:]
-        to_summarize = messages[1:-3]
+        end_index = 1 + config.messages_to_summarize
+        to_summarize = messages[1:end_index]
         summary_prompt = (
-            "Summarize the actions taken and code changes made so far. "
-            "This summary will serve as a reference for continuing the task."
+            f"Summarize these {len(to_summarize)} specific actions and changes technicaly: "
+            "Focus on files created, modified and current task status."
         )
         summary_response = model.invoke([*to_summarize, HumanMessage(content=summary_prompt)])
-        summary_message = SystemMessage(content=f"Summary from past steps: {summary_response.content}")
-        return {"messages": [system_prompt, summary_message, *immediate_context], "steps": steps}
+        summary_message = SystemMessage(
+            content=f"--- ACUMULATED SUMMARY ({len(to_summarize)} msgs) ---\n{summary_response.content}"
+        )
+        return {"messages": [summary_message], "steps": steps}
     return {"steps": steps}
 
 
@@ -35,8 +37,16 @@ def explorer_node(state: AgentState):
     steps = state.get("steps", 0) + 1
     if state["steps"] > config.max_steps:
         return {"steps": steps, "messages": [AIMessage(content="Stopping: too many steps")]}
-    msgs = state["messages"]
-    response = model.invoke(msgs)
+    all_messages = state["messages"]
+    system_message = all_messages[0]
+    window_size = config.chat_window_size
+    if len(all_messages) > window_size:
+        recent_history = all_messages[-window_size:]
+        chat_context = [m for m in recent_history if m.type != "system"]
+        messages_to_send = [system_message, *chat_context]
+    else:
+        messages_to_send = all_messages
+    response = model.invoke(messages_to_send)
     return {"messages": [response], "steps": state["steps"] + 1}
 
 

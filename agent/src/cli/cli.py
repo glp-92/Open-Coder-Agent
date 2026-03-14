@@ -1,24 +1,43 @@
 import traceback
 
-from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
-from langgraph.graph.state import StateGraph
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
+from langgraph.graph.state import CompiledStateGraph
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
 
 
-def run_cli(user_input: str, graph: StateGraph, initial_state: any):
+def run_cli(user_input: str, graph: CompiledStateGraph, initial_state: any):
+    all_nodes: list[str] = list(graph.get_graph().nodes)
+    last_node: str = "__start__"
     console = Console()
     console.print(Panel(f"[bold blue]Prompt:[/bold blue] {user_input}", title="🚀 AGENT START", border_style="blue"))
     try:
         for event in graph.stream(initial_state, stream_mode="updates"):
             event: dict[str, any]
             for node_name, state_update in event.items():
-                console.print(f"\n[bold magenta]📍 Node:[/bold magenta] [italic]{node_name}[/italic]")
+                transition = (
+                    f"[dim]{last_node}[/dim] [bold cyan]➔[/bold cyan] "
+                    f"[bold reverse green] {node_name} [/bold reverse green]"
+                )
+                others = " | ".join([f"[dim]{n}[/dim]" for n in all_nodes if n != node_name])
+                console.print(
+                    f"\n[bold magenta]📍 Step:[/bold magenta] {transition}  [dim](available nodes: {others})[/dim]"
+                )
+                last_node = node_name
                 if "messages" in state_update:
                     last_message: BaseMessage = state_update["messages"][-1]
-                    if isinstance(last_message, AIMessage):
+                    if isinstance(last_message, SystemMessage) and "Summary" in str(last_message.content):
+                        console.print(
+                            Panel(
+                                f"[bold cyan]{last_message.content}[/bold cyan]",
+                                title="🧠 MEMORY COMPACTED",
+                                border_style="cyan",
+                                subtitle="Tokens optimized",
+                            )
+                        )
+                    elif isinstance(last_message, AIMessage):
                         clean_content: str = last_message.content.strip()
                         if clean_content:
                             console.print(
