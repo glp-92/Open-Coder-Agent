@@ -3,6 +3,19 @@ from tools.utilities import resolve_path, run_subprocess_from_root_path
 
 
 @tool
+def make_dirs(dir_list: list[str]) -> str:
+    """
+    Create a list of empty directories, useful when creating a project structure with no code on it
+    """
+    try:
+        for dir in dir_list:
+            _ = resolve_path(dir).mkdir(parents=True, exist_ok=True)
+        return "Success: directories created successfully"
+    except Exception as e:
+        return f"Error: make dirs {e!s}"
+
+
+@tool
 def create_file(file_path: str, content: str) -> str:
     """
     Create a new file with the provided content. Creates folder if there are not route to file

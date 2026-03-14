@@ -3,6 +3,7 @@ import tools.python.coder
 import tools.python.inspector
 
 TOOLS_REGISTRY: list[callable] = [
+    tools.python.inspector.get_repository_tree,
     tools.python.inspector.list_dir,
     tools.python.inspector.get_enhanced_signatures_from_module,
     tools.python.inspector.get_imports,
@@ -12,6 +13,7 @@ TOOLS_REGISTRY: list[callable] = [
     tools.python.coder.create_file,
     tools.python.coder.write_file,
     tools.python.coder.run_linting,
+    tools.python.coder.make_dirs,
     tools.common.git.git_commit_and_push,
     tools.common.git.git_status,
     tools.common.git.git_diff,
