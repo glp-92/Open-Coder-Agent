@@ -2,7 +2,7 @@ from config.config import config
 from graph.state import AgentState
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.prebuilt import ToolNode
-from model.model import model
+from model.model import model, summary_model
 from tools.registry import TOOLS_REGISTRY
 
 tool_node = ToolNode(tools=TOOLS_REGISTRY, messages_key="messages")
@@ -19,10 +19,10 @@ def memory_manager_node(state: AgentState):
         end_index = 1 + config.messages_to_summarize
         to_summarize = messages[1:end_index]
         summary_prompt = (
-            f"Summarize these {len(to_summarize)} specific actions and changes technicaly: "
-            "Focus on files created, modified and current task status."
+            f"Summarize these {len(to_summarize)} messages in compact technical bullet points. "
+            "Keep only files changed, tools used, and current task status."
         )
-        summary_response = model.invoke([*to_summarize, HumanMessage(content=summary_prompt)])
+        summary_response = summary_model.invoke([*to_summarize, HumanMessage(content=summary_prompt)])
         summary_message = SystemMessage(
             content=f"--- ACUMULATED SUMMARY ({len(to_summarize)} msgs) ---\n{summary_response.content}"
         )
@@ -35,7 +35,7 @@ def explorer_node(state: AgentState):
     Receives current state, decides tool to use based on model decision
     """
     steps = state.get("steps", 0) + 1
-    if state["steps"] > config.max_steps:
+    if steps > config.max_steps:
         return {"steps": steps, "messages": [AIMessage(content="Stopping: too many steps")]}
     all_messages = state["messages"]
     system_message = all_messages[0]
@@ -47,7 +47,7 @@ def explorer_node(state: AgentState):
     else:
         messages_to_send = all_messages
     response = model.invoke(messages_to_send)
-    return {"messages": [response], "steps": state["steps"] + 1}
+    return {"messages": [response], "steps": steps}
 
 
 def router_logic(state: AgentState):

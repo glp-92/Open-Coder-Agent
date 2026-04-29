@@ -1,5 +1,5 @@
 from langchain.tools import tool
-from tools.utilities import resolve_path, run_subprocess_from_root_path
+from tools.utilities import REPOSITORY_ROOT_PATH, resolve_path, run_subprocess_from_root_path
 
 
 @tool
@@ -25,8 +25,7 @@ def create_file(file_path: str, content: str) -> str:
     try:
         path = resolve_path(file_path)
         if path.exists():
-            path.write_text(content, encoding="utf-8")
-            return f"Success: wrote existing file {file_path}"
+            return f"Error: {file_path} already exists. Use write_file only after reading it first."
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         return f"Success: created new file {file_path}"
@@ -56,7 +55,7 @@ def write_file(file_path: str, content: str) -> str:
 
 
 @tool
-def run_linting() -> str:
+def run_linting(paths: list[str] | None = None) -> str:
     """
     Run project formatting and linting.
 
@@ -67,11 +66,19 @@ def run_linting() -> str:
 
     Returns combined output.
     """
-    cmds_args: list[str] = [
-        ["isort", "."],
-        ["ruff", "format", "."],
-        ["ruff", "check", ".", "--fix"],
+    normalized_paths = paths or ["."]
+    resolved_targets = [resolve_path(path) for path in normalized_paths]
+    lint_targets = [str(target.relative_to(REPOSITORY_ROOT_PATH)) for target in resolved_targets]
+    python_targets = [
+        str(target.relative_to(REPOSITORY_ROOT_PATH))
+        for target in resolved_targets
+        if target.is_dir() or target.suffix == ".py"
     ]
+
+    cmds_args: list[list[str]] = [["ruff", "check", *lint_targets, "--fix"], ["ruff", "format", *lint_targets]]
+    if python_targets:
+        cmds_args.insert(0, ["isort", *python_targets])
+
     outputs = []
     try:
         for cmd_args in cmds_args:

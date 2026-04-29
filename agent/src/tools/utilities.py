@@ -39,6 +39,13 @@ def resolve_path(file_path: str) -> Path:
     return path
 
 
+def to_repository_relative_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(REPOSITORY_ROOT_PATH).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def run_subprocess_from_root_path(args: list[str]) -> str:
     """
     Function to run git commands on a safe way
