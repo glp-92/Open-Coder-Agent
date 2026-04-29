@@ -32,10 +32,22 @@ IGNORE_EXTENSIONS: set = {
 REPOSITORY_ROOT_PATH: Path = Path(config.repository_root_path)
 
 
+def _normalize_repo_relative_input(file_path: str) -> str:
+    candidate = file_path.strip().replace("\\", "/")
+    if candidate in {"", ".", "./"}:
+        return "."
+    # UX: treat '/src/..' as path relative to repository root, not filesystem root.
+    return candidate[1:] if candidate.startswith("/") else candidate
+
+
 def resolve_path(file_path: str) -> Path:
-    path: Path = (REPOSITORY_ROOT_PATH / file_path).resolve()
-    if not str(path).startswith(str(REPOSITORY_ROOT_PATH)):
-        raise ValueError("Error: file path provide does not match repository root")
+    root: Path = REPOSITORY_ROOT_PATH.resolve()
+    relative_input = _normalize_repo_relative_input(file_path)
+    path: Path = (root / relative_input).expanduser().resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Error: file path does not match repository root") from exc
     return path
 
 

@@ -62,22 +62,34 @@ uv run pre-commit run --all-files
 docker compose up -d
 ```
 
-## Ejecutar API en local (modo desarrollo)
-
-No aplica: la API intermedia fue eliminada para simplificar el stack.
-
 ## Ejecutar agente por CLI
 
 El agente recibe el prompt como argumento:
 
 ```bash
-uv run python agent/src/main.py "tu prompt aqui"
+./agent-run "tu prompt aqui"
+```
+
+### Uso desde cualquier repositorio objetivo
+
+Si ya estás parado en el repositorio donde quieres que el agente trabaje:
+
+```bash
+REPOSITORY_ROOT_PATH="$PWD" /home/glp-desktop/Workspace/Open-Coder-Agent/agent-run "tu prompt aqui"
+```
+
+Eso ejecuta el agente instalado en Open-Coder-Agent, pero operando sobre el repo actual (`$PWD`).
+
+Comando avanzado equivalente (solo si lo necesitas):
+
+```bash
+REPOSITORY_ROOT_PATH="$PWD" uv --directory /home/glp-desktop/Workspace/Open-Coder-Agent run python agent/src/main.py "tu prompt aqui"
 ```
 
 Ejemplo:
 
 ```bash
-uv run python agent/src/main.py "revisa el modulo de tools y propone mejoras de rendimiento"
+./agent-run "revisa el modulo de tools y propone mejoras de rendimiento"
 ```
 
 ## Verificación rápida de calidad

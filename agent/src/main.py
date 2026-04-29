@@ -20,5 +20,11 @@ def run(user_input: str) -> None:
 
 
 if __name__ == "__main__":
-    user_input: str = sys.argv[1]
+    if len(sys.argv) < 2:
+        print('Usage: python agent/src/main.py "your prompt"')  # noqa: T201
+        raise SystemExit(2)
+    user_input: str = " ".join(sys.argv[1:]).strip()
+    if not user_input:
+        print("Error: prompt cannot be empty")  # noqa: T201
+        raise SystemExit(2)
     run(user_input=user_input)

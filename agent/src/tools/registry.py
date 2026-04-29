@@ -16,6 +16,7 @@ TOOLS_REGISTRY: list[callable] = [
     tools.python.coder.create_file,
     tools.python.coder.write_file,
     tools.python.coder.run_linting,
+    tools.python.coder.make_dir,
     tools.python.coder.make_dirs,
     tools.bash.executor.run_bash,
     tools.bash.executor.which_command,

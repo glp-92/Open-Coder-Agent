@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
@@ -26,6 +26,16 @@ class Config(BaseModel):
     chat_window_size: int = Field(default=6, ge=4)
     repository_root_path: str = Field(min_length=1)
 
+    @field_validator("repository_root_path")
+    @classmethod
+    def _validate_repository_root_path(cls, value: str) -> str:
+        root = Path(value).expanduser().resolve()
+        if not root.is_absolute():
+            raise ValueError("repository_root_path must be an absolute path")
+        if not root.exists() or not root.is_dir():
+            raise ValueError("repository_root_path must exist and be a directory")
+        return str(root)
+
     @model_validator(mode="after")
     def _validate_message_windows(self):
         if self.max_messages_for_summary < self.messages_to_summarize:
@@ -41,11 +51,11 @@ with open(Path(__file__).resolve().parent / "prompt.md", encoding="utf-8") as fi
 config = Config(
     ollama_url=_first_env("OLLAMA_URL", default="http://localhost:11434"),
     llm_model=_first_env("MODEL_NAME", default="qwen3.5:2b"),
-    model_num_ctx=int(_first_env("AGENT_MODEL_NUM_CTX", "MODEL_NUM_CTX", default="4096")),
+    model_num_ctx=_first_env("AGENT_MODEL_NUM_CTX", "MODEL_NUM_CTX", default="4096"),
     agent_config_prompt=prompt,
-    max_steps=int(_first_env("AGENT_MAX_STEPS", "MAX_STEPS", default="20")),
-    max_messages_for_summary=int(_first_env("AGENT_MAX_MESSAGES_FOR_SUMMARY", default="10")),
-    messages_to_summarize=int(_first_env("AGENT_MESSAGES_TO_SUMMARIZE", default="4")),
-    chat_window_size=int(_first_env("AGENT_CHAT_WINDOW_SIZE", default="6")),
+    max_steps=_first_env("AGENT_MAX_STEPS", "MAX_STEPS", default="20"),
+    max_messages_for_summary=_first_env("AGENT_MAX_MESSAGES_FOR_SUMMARY", default="10"),
+    messages_to_summarize=_first_env("AGENT_MESSAGES_TO_SUMMARIZE", default="4"),
+    chat_window_size=_first_env("AGENT_CHAT_WINDOW_SIZE", default="6"),
     repository_root_path=_first_env("REPOSITORY_ROOT_PATH") or "",
 )
